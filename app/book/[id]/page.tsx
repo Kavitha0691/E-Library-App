@@ -248,9 +248,9 @@ export default function BookDetailPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex space-x-4">
+            <div className="space-y-3">
               {book.source === 'user' && book.fileUrl && (
-                <>
+                <div className="flex space-x-4">
                   <button
                     onClick={handleDownload}
                     className="flex-1 flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
@@ -265,22 +265,44 @@ export default function BookDetailPage() {
                     rel="noopener noreferrer"
                     className="flex-1 flex items-center justify-center space-x-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
                   >
-                    <ExternalLink className="h-5 w-5" />
-                    <span>View Online</span>
+                    <BookOpen className="h-5 w-5" />
+                    <span>Read Online</span>
                   </a>
-                </>
+                </div>
               )}
 
               {book.source === 'openlibrary' && (
-                <a
-                  href={`https://openlibrary.org${book.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                >
-                  <ExternalLink className="h-5 w-5" />
-                  <span>View on Open Library</span>
-                </a>
+                <>
+                  <a
+                    href={`https://openlibrary.org${book.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex w-full items-center justify-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  >
+                    <BookOpen className="h-5 w-5" />
+                    <span>Read on Open Library</span>
+                  </a>
+
+                  <a
+                    href={`https://archive.org/search?query=${encodeURIComponent(book.title + ' ' + book.author)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex w-full items-center justify-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                  >
+                    <Download className="h-5 w-5" />
+                    <span>Search on Internet Archive</span>
+                  </a>
+
+                  <a
+                    href={`https://www.google.com/search?q=${encodeURIComponent(book.title + ' ' + book.author + ' pdf')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex w-full items-center justify-center space-x-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+                  >
+                    <ExternalLink className="h-5 w-5" />
+                    <span>Find PDF Online</span>
+                  </a>
+                </>
               )}
             </div>
           </div>
