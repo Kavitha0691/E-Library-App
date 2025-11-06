@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase
       .from('reviews')
       .select('*')
-      .eq('bookId', bookId)
-      .order('createdAt', { ascending: false });
+      .eq('book_id', bookId)
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Database error:', error);
@@ -42,9 +42,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     const review = {
-      ...body,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      book_id: body.bookId,
+      user_id: body.userId,
+      user_name: body.userName,
+      rating: body.rating,
+      comment: body.comment,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
 
     const { data, error } = await supabase
@@ -65,7 +69,7 @@ export async function POST(request: NextRequest) {
     const { data: reviews } = await supabase
       .from('reviews')
       .select('rating')
-      .eq('bookId', body.bookId);
+      .eq('book_id', body.bookId);
 
     if (reviews) {
       const totalReviews = reviews.length;
@@ -74,8 +78,8 @@ export async function POST(request: NextRequest) {
       await supabase
         .from('books')
         .update({
-          averageRating,
-          totalReviews,
+          average_rating: averageRating,
+          total_reviews: totalReviews,
         })
         .eq('id', body.bookId);
     }

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('books')
       .select('*')
-      .order('uploadedAt', { ascending: false });
+      .order('uploaded_at', { ascending: false });
 
     if (category && category !== 'all') {
       query = query.eq('category', category);
@@ -45,13 +45,13 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const book: Partial<Book> = {
+    const book = {
       ...body,
-      uploadedAt: new Date().toISOString(),
-      viewCount: 0,
-      downloadCount: 0,
-      averageRating: 0,
-      totalReviews: 0,
+      uploaded_at: new Date().toISOString(),
+      view_count: 0,
+      download_count: 0,
+      average_rating: 0,
+      total_reviews: 0,
       source: 'user',
     };
 

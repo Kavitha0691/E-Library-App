@@ -24,7 +24,7 @@ export async function GET(
     // Increment view count
     await supabase
       .from('books')
-      .update({ viewCount: (data.viewCount || 0) + 1 })
+      .update({ view_count: (data.view_count || 0) + 1 })
       .eq('id', id);
 
     return NextResponse.json({ book: data });
