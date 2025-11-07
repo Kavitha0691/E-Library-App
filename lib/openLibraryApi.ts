@@ -85,32 +85,42 @@ function mapSearchBooks(docs: any[]): Book[] {
 // Map books from subject API (/subjects/{subject}.json)
 function mapSubjectBooks(works: any[]): Book[] {
   console.log('Mapping', works.length, 'subject books');
-  return works
-    .filter(work => work.key && work.title)
-    .map((work) => {
-      const authorName = work.authors?.[0]?.name || 'Unknown Author';
-      const coverId = work.cover_id || work.cover_edition_key;
 
-      return {
-        id: work.key,
-        title: work.title,
-        author: authorName,
-        description: work.first_sentence || work.subject?.slice(0, 3).join(', ') || '',
-        category: work.subject?.[0] || 'Other',
-        coverImage: coverId ? getOpenLibraryCoverUrl(coverId) : undefined,
-        uploadedAt: new Date().toISOString(),
-        viewCount: 0,
-        downloadCount: 0,
-        averageRating: 0,
-        totalReviews: 0,
-        source: 'openlibrary' as const,
-        openLibraryId: work.key,
-        isbn: work.availability?.isbn,
-        publishYear: work.first_publish_year,
-        publisher: work.publishers?.[0],
-        fileUrl: `${BASE_URL}${work.key}`,
-      };
-    });
+  if (!works || works.length === 0) {
+    console.warn('No works to map');
+    return [];
+  }
+
+  const validBooks = works.filter(work => work.key && work.title);
+  console.log('Valid books after filtering:', validBooks.length);
+
+  const mappedBooks = validBooks.map((work) => {
+    const authorName = work.authors?.[0]?.name || 'Unknown Author';
+    const coverId = work.cover_id || work.cover_edition_key;
+
+    return {
+      id: work.key,
+      title: work.title,
+      author: authorName,
+      description: work.first_sentence || work.subject?.slice(0, 3).join(', ') || '',
+      category: work.subject?.[0] || 'Other',
+      coverImage: coverId ? getOpenLibraryCoverUrl(coverId) : undefined,
+      uploadedAt: new Date().toISOString(),
+      viewCount: 0,
+      downloadCount: 0,
+      averageRating: 0,
+      totalReviews: 0,
+      source: 'openlibrary' as const,
+      openLibraryId: work.key,
+      isbn: work.availability?.isbn,
+      publishYear: work.first_publish_year,
+      publisher: work.publishers?.[0],
+      fileUrl: `${BASE_URL}${work.key}`,
+    };
+  });
+
+  console.log('Sample mapped book:', mappedBooks[0]);
+  return mappedBooks;
 }
 
 export async function getOpenLibraryBookDetails(workId: string): Promise<OpenLibraryBookDetails | null> {
