@@ -5,7 +5,7 @@ import { Book } from '@/types';
 import BookCard from '@/components/BookCard';
 import SearchBar from '@/components/SearchBar';
 import CategoryFilter from '@/components/CategoryFilter';
-import { Loader2, BookOpen, Library } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 export default function Home() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -13,98 +13,46 @@ export default function Home() {
   const [error, setError] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Fiction');
-  const [source, setSource] = useState<'library' | 'openlibrary'>('openlibrary');
-
-  // Fetch user-uploaded books from database
-  const fetchLibraryBooks = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const params = new URLSearchParams();
-
-      if (selectedCategory !== 'all') {
-        params.append('category', selectedCategory);
-      }
-
-      if (searchQuery) {
-        params.append('search', searchQuery);
-      }
-
-      console.log('Fetching library books...');
-      const response = await fetch(`/api/books?${params.toString()}`);
-      const data = await response.json();
-
-      console.log('Library response:', data);
-
-      if (response.ok) {
-        const bookList = data.books || [];
-        setBooks(bookList);
-        if (bookList.length === 0) {
-          setError('Your library is empty. Upload books or switch to Open Library to browse millions of books!');
-        }
-      } else {
-        console.error('Library API error:', data);
-        setError('Your library database is not set up yet. Please use Open Library for now, or set up your Supabase database tables.');
-        setBooks([]);
-      }
-    } catch (error) {
-      console.error('Error fetching books:', error);
-      setError('Unable to connect to your library database. Please use Open Library for now.');
-      setBooks([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Fetch Open Library books by category
-  const fetchOpenLibraryBooks = async (category: string) => {
+  const fetchBooks = async (category: string) => {
     try {
       setLoading(true);
       setError('');
-      const params = new URLSearchParams();
 
-      const categoryToFetch = category === 'all' ? 'Fiction' : category;
-      params.append('category', categoryToFetch);
-      params.append('limit', '24');
-
-      const url = `/api/search?${params.toString()}`;
-      console.log('Fetching Open Library books from:', url);
+      const url = `/api/search?category=${encodeURIComponent(category)}&limit=24`;
+      console.log('🔍 Fetching from:', url);
 
       const response = await fetch(url);
       const data = await response.json();
 
-      console.log('Open Library API Response:', data);
-      console.log('Number of books:', data.books?.length || 0);
+      console.log('📦 Response:', data);
 
-      if (response.ok && data.books) {
-        console.log('Setting books:', data.books.length);
+      if (response.ok && data.books && data.books.length > 0) {
+        console.log('✅ Successfully loaded', data.books.length, 'books');
         setBooks(data.books);
         setError('');
       } else {
-        console.error('API error:', data);
-        setError(data.message || data.error || 'Failed to fetch books');
+        console.error('❌ Failed to load books:', data);
+        setError('Unable to load books from Open Library. Please check your internet connection and try again.');
         setBooks([]);
       }
     } catch (error: any) {
-      console.error('Error fetching Open Library books:', error);
-      setError(`Network error: ${error.message}`);
+      console.error('❌ Error:', error);
+      setError(`Error loading books: ${error.message}. Please check your internet connection.`);
       setBooks([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Search Open Library or local library
+  // Search Open Library
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
 
     if (!query.trim()) {
       // No search query - show category books
-      if (source === 'openlibrary') {
-        fetchOpenLibraryBooks(selectedCategory);
-      } else {
-        fetchLibraryBooks();
-      }
+      fetchBooks(selectedCategory);
       return;
     }
 
@@ -112,30 +60,25 @@ export default function Home() {
       setLoading(true);
       setError('');
 
-      if (source === 'openlibrary') {
-        // Search Open Library
-        const url = `/api/search?q=${encodeURIComponent(query)}`;
-        console.log('Searching Open Library:', url);
+      const url = `/api/search?q=${encodeURIComponent(query)}`;
+      console.log('🔍 Searching:', url);
 
-        const response = await fetch(url);
-        const data = await response.json();
+      const response = await fetch(url);
+      const data = await response.json();
 
-        console.log('Search response:', data);
+      console.log('📦 Search results:', data);
 
-        if (response.ok && data.books) {
-          setBooks(data.books);
-          setError('');
-        } else {
-          setError(data.message || 'Search failed');
-          setBooks([]);
-        }
+      if (response.ok && data.books && data.books.length > 0) {
+        console.log('✅ Found', data.books.length, 'books');
+        setBooks(data.books);
+        setError('');
       } else {
-        // Search local library
-        fetchLibraryBooks();
+        setError(`No books found for "${query}". Try a different search term.`);
+        setBooks([]);
       }
     } catch (error: any) {
-      console.error('Error searching:', error);
-      setError(`Search error: ${error.message}`);
+      console.error('❌ Search error:', error);
+      setError(`Search failed: ${error.message}`);
       setBooks([]);
     } finally {
       setLoading(false);
@@ -144,85 +87,33 @@ export default function Home() {
 
   // Handle category change
   const handleCategoryChange = (category: string) => {
-    console.log('Category changed to:', category);
+    console.log('📚 Category changed to:', category);
     setSelectedCategory(category);
     setSearchQuery('');
-    setError('');
+    fetchBooks(category);
   };
 
-  // Handle source toggle
-  const handleSourceToggle = (newSource: 'library' | 'openlibrary') => {
-    console.log('Source toggled to:', newSource);
-    setSource(newSource);
-    setSearchQuery('');
-    setError('');
-    setSelectedCategory(newSource === 'openlibrary' ? 'Fiction' : 'all');
-  };
-
-  // Load books on mount or when source/category changes
+  // Load Fiction books on mount
   useEffect(() => {
-    console.log('=== PAGE EFFECT TRIGGERED ===');
-    console.log('Source:', source);
-    console.log('Category:', selectedCategory);
-    console.log('Search Query:', searchQuery);
-    console.log('============================');
-
-    if (searchQuery) {
-      console.log('Has search query, calling handleSearch');
-      handleSearch(searchQuery);
-    } else if (source === 'openlibrary') {
-      console.log('Source is Open Library, fetching books for category:', selectedCategory);
-      fetchOpenLibraryBooks(selectedCategory);
-    } else {
-      console.log('Source is My Library, fetching from database');
-      fetchLibraryBooks();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source, selectedCategory]);
+    console.log('🚀 Page loaded, fetching Fiction books...');
+    fetchBooks('Fiction');
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          Welcome to E-Library
+          E-Library - Open Library Collection
         </h1>
         <p className="text-lg text-gray-600 mb-6">
-          Discover and read thousands of books from our collection and Open Library
+          Discover and read millions of books from Open Library
         </p>
-
-        {/* Source Toggle */}
-        <div className="flex justify-center mb-6">
-          <div className="inline-flex rounded-lg border border-gray-300 p-1 bg-gray-50">
-            <button
-              onClick={() => handleSourceToggle('openlibrary')}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition ${
-                source === 'openlibrary'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <BookOpen className="h-4 w-4" />
-              <span>Open Library</span>
-            </button>
-            <button
-              onClick={() => handleSourceToggle('library')}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition ${
-                source === 'library'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Library className="h-4 w-4" />
-              <span>My Library</span>
-            </button>
-          </div>
-        </div>
 
         {/* Search Bar */}
         <div className="flex justify-center mb-6">
           <SearchBar
             onSearch={handleSearch}
-            placeholder={source === 'openlibrary' ? 'Search millions of books...' : 'Search your library...'}
+            placeholder="Search millions of books..."
           />
         </div>
 
@@ -234,16 +125,12 @@ export default function Home() {
           />
         </div>
 
-        {/* Source Indicator */}
-        <div className="text-sm text-gray-500">
+        {/* Info */}
+        <div className="text-sm text-gray-500 mb-4">
           {searchQuery ? (
-            <p>Showing search results from {source === 'openlibrary' ? 'Open Library' : 'your library'}</p>
+            <p>Showing search results for "<strong>{searchQuery}</strong>"</p>
           ) : (
-            <p>
-              {source === 'openlibrary'
-                ? `Browsing ${selectedCategory !== 'all' ? selectedCategory : 'Popular'} books from Open Library`
-                : 'Showing books from your library'}
-            </p>
+            <p>Browsing <strong>{selectedCategory}</strong> books from Open Library</p>
           )}
         </div>
       </div>
@@ -253,44 +140,50 @@ export default function Home() {
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
           <p className="font-semibold">Error:</p>
           <p>{error}</p>
+          <button
+            onClick={() => fetchBooks(selectedCategory)}
+            className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <span className="ml-2 text-gray-600">Loading books...</span>
         </div>
       )}
 
       {/* Books Grid */}
-      {loading ? (
-        <div className="flex flex-col justify-center items-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
-          <p className="text-gray-600">Loading books...</p>
-        </div>
-      ) : books.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg mb-4">
-            {searchQuery
-              ? 'No books found matching your search.'
-              : source === 'library'
-                ? 'No books in your library yet. Upload your first book or browse Open Library!'
-                : 'No books found in this category. Try another category or check your internet connection.'}
-          </p>
-          {!searchQuery && source === 'openlibrary' && (
-            <button
-              onClick={() => fetchOpenLibraryBooks(selectedCategory)}
-              className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-            >
-              Retry Loading Books
-            </button>
-          )}
-        </div>
-      ) : (
-        <>
-          <p className="text-center text-gray-600 mb-4">
-            Showing {books.length} books
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {!loading && books.length > 0 && (
+        <div>
+          <div className="mb-4 text-sm text-gray-600 text-center">
+            ✅ Showing {books.length} books
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {books.map((book, index) => (
               <BookCard key={`${book.id}-${index}`} book={book} />
             ))}
           </div>
-        </>
+        </div>
+      )}
+
+      {/* No Results */}
+      {!loading && !error && books.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-gray-500 text-lg mb-4">
+            No books found. Try a different category or search term.
+          </p>
+          <button
+            onClick={() => fetchBooks('Fiction')}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Browse Fiction Books
+          </button>
+        </div>
       )}
     </div>
   );
