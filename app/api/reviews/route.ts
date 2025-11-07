@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { dbToReview } from '@/lib/dbTransform';
+
+const REVIEW_COLUMNS = `
+  id,
+  book_id,
+  user_id,
+  user_name,
+  rating,
+  comment,
+  created_at,
+  updated_at
+`.replace(/\s+/g, ' ').trim();
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase
       .from('reviews')
-      .select('*')
+      .select(REVIEW_COLUMNS)
       .eq('book_id', bookId)
       .order('created_at', { ascending: false });
 
@@ -27,7 +39,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ reviews: data || [] });
+    // Transform database snake_case to TypeScript camelCase
+    const reviews = (data || []).map(dbToReview);
+
+    return NextResponse.json({ reviews });
   } catch (error) {
     console.error('Reviews API error:', error);
     return NextResponse.json(
@@ -54,7 +69,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from('reviews')
       .insert([review])
-      .select()
+      .select(REVIEW_COLUMNS)
       .single();
 
     if (error) {
@@ -84,7 +99,10 @@ export async function POST(request: NextRequest) {
         .eq('id', body.bookId);
     }
 
-    return NextResponse.json({ review: data });
+    // Transform database snake_case to TypeScript camelCase
+    const reviewData = dbToReview(data);
+
+    return NextResponse.json({ review: reviewData });
   } catch (error) {
     console.error('Reviews API error:', error);
     return NextResponse.json(
