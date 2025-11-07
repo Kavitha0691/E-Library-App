@@ -37,14 +37,19 @@ export default function Home() {
       console.log('Library response:', data);
 
       if (response.ok) {
-        setBooks(data.books || []);
+        const bookList = data.books || [];
+        setBooks(bookList);
+        if (bookList.length === 0) {
+          setError('Your library is empty. Upload books or switch to Open Library to browse millions of books!');
+        }
       } else {
-        setError(data.error || 'Failed to fetch books');
+        console.error('Library API error:', data);
+        setError('Your library database is not set up yet. Please use Open Library for now, or set up your Supabase database tables.');
         setBooks([]);
       }
     } catch (error) {
       console.error('Error fetching books:', error);
-      setError('Network error while fetching books');
+      setError('Unable to connect to your library database. Please use Open Library for now.');
       setBooks([]);
     } finally {
       setLoading(false);
@@ -156,13 +161,20 @@ export default function Home() {
 
   // Load books on mount or when source/category changes
   useEffect(() => {
-    console.log('Effect triggered - Source:', source, 'Category:', selectedCategory, 'Search:', searchQuery);
+    console.log('=== PAGE EFFECT TRIGGERED ===');
+    console.log('Source:', source);
+    console.log('Category:', selectedCategory);
+    console.log('Search Query:', searchQuery);
+    console.log('============================');
 
     if (searchQuery) {
+      console.log('Has search query, calling handleSearch');
       handleSearch(searchQuery);
     } else if (source === 'openlibrary') {
+      console.log('Source is Open Library, fetching books for category:', selectedCategory);
       fetchOpenLibraryBooks(selectedCategory);
     } else {
+      console.log('Source is My Library, fetching from database');
       fetchLibraryBooks();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
