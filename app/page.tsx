@@ -56,11 +56,21 @@ export default function Home() {
 
       params.append('limit', '24');
 
-      const response = await fetch(`/api/search?${params.toString()}`);
+      const url = `/api/search?${params.toString()}`;
+      console.log('Fetching from:', url);
+
+      const response = await fetch(url);
       const data = await response.json();
 
+      console.log('Response status:', response.status);
+      console.log('Response data:', data);
+
       if (response.ok) {
+        console.log('Setting', data.books?.length || 0, 'books');
         setBooks(data.books || []);
+      } else {
+        console.error('API error:', data.error);
+        setBooks([]);
       }
     } catch (error) {
       console.error('Error fetching Open Library books:', error);
