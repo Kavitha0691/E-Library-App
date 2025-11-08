@@ -53,7 +53,7 @@ export default function BookDetailPage() {
 
       // For user-uploaded books from database
       if (!bookId.startsWith('/works/')) {
-        const response = await fetch(\`/api/books/\${bookId}\`);
+        const response = await fetch(`/api/books/${bookId}`);
         const data = await response.json();
 
         if (response.ok) {
@@ -86,7 +86,7 @@ export default function BookDetailPage() {
 
   const fetchReviews = async (id: string) => {
     try {
-      const response = await fetch(\`/api/reviews?bookId=\${id}\`);
+      const response = await fetch(`/api/reviews?bookId=${id}`);
       const data = await response.json();
 
       if (response.ok) {
@@ -103,7 +103,7 @@ export default function BookDetailPage() {
     try {
       // Record download count
       if (book.source === 'user') {
-        await fetch(\`/api/books/\${bookId}/download\`, {
+        await fetch(`/api/books/${bookId}/download`, {
           method: 'POST',
         });
       }
@@ -285,7 +285,7 @@ export default function BookDetailPage() {
 
               {book.source === 'openlibrary' && (
                 <a
-                  href={\`https://openlibrary.org\${book.id}\`}
+                  href={`https://openlibrary.org${book.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex w-full items-center justify-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-lg font-medium"
