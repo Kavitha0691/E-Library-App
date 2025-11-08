@@ -299,90 +299,79 @@ export default function BookDetailPage() {
         </div>
       </div>
 
-      {/* Reviews Section - Only for user-uploaded books */}
-      {book.source === 'user' && (
-        <div className="mt-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Reviews</h2>
+      {/* Reviews Section - Now available for all books */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Reviews</h2>
 
-          {/* Add Review Form */}
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Write a Review
-            </h3>
+        {/* Add Review Form */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Write a Review
+          </h3>
 
-            <form onSubmit={handleSubmitReview}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Your Name
-                </label>
-                <input
-                  type="text"
-                  value={newReview.userName}
-                  onChange={(e) =>
-                    setNewReview({ ...newReview, userName: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
+          <form onSubmit={handleSubmitReview}>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Your Name
+              </label>
+              <input
+                type="text"
+                value={newReview.userName}
+                onChange={(e) =>
+                  setNewReview({ ...newReview, userName: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Rating
-                </label>
-                <StarRating
-                  rating={newReview.rating}
-                  onChange={(rating) => setNewReview({ ...newReview, rating })}
-                />
-              </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Rating
+              </label>
+              <StarRating
+                rating={newReview.rating}
+                onChange={(rating) => setNewReview({ ...newReview, rating })}
+              />
+            </div>
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Comment (Optional)
-                </label>
-                <textarea
-                  value={newReview.comment}
-                  onChange={(e) =>
-                    setNewReview({ ...newReview, comment: e.target.value })
-                  }
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Comment (Optional)
+              </label>
+              <textarea
+                value={newReview.comment}
+                onChange={(e) =>
+                  setNewReview({ ...newReview, comment: e.target.value })
+                }
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
 
-              <button
-                type="submit"
-                disabled={reviewLoading}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-              >
-                {reviewLoading ? 'Submitting...' : 'Submit Review'}
-              </button>
-            </form>
-          </div>
-
-          {/* Reviews List */}
-          <div className="space-y-4">
-            {reviews.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">
-                No reviews yet. Be the first to review this book!
-              </p>
-            ) : (
-              reviews.map((review) => (
-                <ReviewCard key={review.id} review={review} />
-              ))
-            )}
-          </div>
+            <button
+              type="submit"
+              disabled={reviewLoading}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+            >
+              {reviewLoading ? 'Submitting...' : 'Submit Review'}
+            </button>
+          </form>
         </div>
-      )}
 
-      {/* Info message for Open Library books */}
-      {book.source === 'openlibrary' && (
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-          <p className="text-blue-800 text-sm">
-            ℹ️ Reviews are not available for Open Library books. Click "Read on Open Library" to view ratings and reviews on their website.
-          </p>
+        {/* Reviews List */}
+        <div className="space-y-4">
+          {reviews.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">
+              No reviews yet. Be the first to review this book!
+            </p>
+          ) : (
+            reviews.map((review) => (
+              <ReviewCard key={review.id} review={review} />
+            ))
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
