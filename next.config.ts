@@ -1,7 +1,19 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'covers.openlibrary.org',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lgjzetyzbxuxzjcmrrij.supabase.co',
+      },
+    ],
+    domains: ['covers.openlibrary.org', 'lgjzetyzbxuxzjcmrrij.supabase.co'],
+  },
 };
 
 export default nextConfig;

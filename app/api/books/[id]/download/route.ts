@@ -10,7 +10,7 @@ export async function POST(
     // Increment download count
     const { data, error } = await supabase
       .from('books')
-      .select('downloadCount')
+      .select('download_count')
       .eq('id', id)
       .single();
 
@@ -24,7 +24,7 @@ export async function POST(
 
     await supabase
       .from('books')
-      .update({ downloadCount: (data.downloadCount || 0) + 1 })
+      .update({ download_count: (data.download_count || 0) + 1 })
       .eq('id', id);
 
     return NextResponse.json({ success: true });

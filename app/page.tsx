@@ -10,133 +10,179 @@ import { Loader2 } from 'lucide-react';
 export default function Home() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [searchType, setSearchType] = useState<'library' | 'openlibrary'>('library');
+  const [selectedCategory, setSelectedCategory] = useState('Fiction');
 
-  // Fetch user-uploaded books from database
-  const fetchLibraryBooks = async () => {
+  // Fetch Open Library books by category
+  const fetchBooks = async (category: string) => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
+      setError('');
 
-      if (selectedCategory !== 'all') {
-        params.append('category', selectedCategory);
-      }
+      const url = `/api/search?category=${encodeURIComponent(category)}&limit=24`;
+      console.log('🔍 Fetching from:', url);
 
-      if (searchQuery) {
-        params.append('search', searchQuery);
-      }
-
-      const response = await fetch(`/api/books?${params.toString()}`);
+      const response = await fetch(url);
       const data = await response.json();
 
-      if (response.ok) {
-        setBooks(data.books || []);
+      console.log('📦 Response:', data);
+
+      if (response.ok && data.books && data.books.length > 0) {
+        console.log('✅ Successfully loaded', data.books.length, 'books');
+        setBooks(data.books);
+        setError('');
+      } else {
+        console.error('❌ Failed to load books:', data);
+        setError('Unable to load books from Open Library. Please check your internet connection and try again.');
+        setBooks([]);
       }
-    } catch (error) {
-      console.error('Error fetching books:', error);
+    } catch (error: any) {
+      console.error('❌ Error:', error);
+      setError(`Error loading books: ${error.message}. Please check your internet connection.`);
       setBooks([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Search Open Library API
-  const searchOpenLibrary = async (query: string) => {
+  // Search Open Library
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+
     if (!query.trim()) {
-      fetchLibraryBooks();
-      setSearchType('library');
+      // No search query - show category books
+      fetchBooks(selectedCategory);
       return;
     }
 
     try {
       setLoading(true);
-      setSearchType('openlibrary');
+      setError('');
 
-      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      const url = `/api/search?q=${encodeURIComponent(query)}`;
+      console.log('🔍 Searching:', url);
+
+      const response = await fetch(url);
       const data = await response.json();
 
-      if (response.ok) {
-        setBooks(data.books || []);
+      console.log('📦 Search results:', data);
+
+      if (response.ok && data.books && data.books.length > 0) {
+        console.log('✅ Found', data.books.length, 'books');
+        setBooks(data.books);
+        setError('');
+      } else {
+        setError(`No books found for "${query}". Try a different search term.`);
+        setBooks([]);
       }
-    } catch (error) {
-      console.error('Error searching Open Library:', error);
+    } catch (error: any) {
+      console.error('❌ Search error:', error);
+      setError(`Search failed: ${error.message}`);
       setBooks([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Initial load and category changes
-  useEffect(() => {
-    if (searchQuery && searchType === 'openlibrary') {
-      searchOpenLibrary(searchQuery);
-    } else {
-      fetchLibraryBooks();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategory]);
-
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    if (query.trim()) {
-      searchOpenLibrary(query);
-    } else {
-      setSearchType('library');
-      fetchLibraryBooks();
-    }
+  // Handle category change
+  const handleCategoryChange = (category: string) => {
+    console.log('📚 Category changed to:', category);
+    setSelectedCategory(category);
+    setSearchQuery('');
+    fetchBooks(category);
   };
+
+  // Load Fiction books on mount
+  useEffect(() => {
+    console.log('🚀 Page loaded, fetching Fiction books...');
+    fetchBooks('Fiction');
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          Welcome to E-Library
+          E-Library - Open Library Collection
         </h1>
         <p className="text-lg text-gray-600 mb-6">
-          Discover and read thousands of books from our collection and Open Library
+          Discover and read millions of books from Open Library
         </p>
 
+        {/* Search Bar */}
         <div className="flex justify-center mb-6">
-          <SearchBar onSearch={handleSearch} />
+          <SearchBar
+            onSearch={handleSearch}
+            placeholder="Search millions of books..."
+          />
         </div>
 
-        {searchType === 'library' && (
-          <div className="mb-6">
-            <CategoryFilter
-              selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
-            />
-          </div>
-        )}
+        {/* Category Filter */}
+        <div className="mb-6">
+          <CategoryFilter
+            selectedCategory={selectedCategory}
+            onCategoryChange={handleCategoryChange}
+          />
+        </div>
 
-        <div className="text-sm text-gray-500">
-          {searchType === 'openlibrary' ? (
-            <p>Showing results from Open Library API</p>
+        {/* Info */}
+        <div className="text-sm text-gray-500 mb-4">
+          {searchQuery ? (
+            <p>Showing search results for "<strong>{searchQuery}</strong>"</p>
           ) : (
-            <p>Showing books from our library</p>
+            <p>Browsing <strong>{selectedCategory}</strong> books from Open Library</p>
           )}
         </div>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center items-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+          <p className="font-semibold">Error:</p>
+          <p>{error}</p>
+          <button
+            onClick={() => fetchBooks(selectedCategory)}
+            className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+          >
+            Try Again
+          </button>
         </div>
-      ) : books.length === 0 ? (
+      )}
+
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <span className="ml-2 text-gray-600">Loading books...</span>
+        </div>
+      )}
+
+      {/* Books Grid */}
+      {!loading && books.length > 0 && (
+        <div>
+          <div className="mb-4 text-sm text-gray-600 text-center">
+            ✅ Showing {books.length} books
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {books.map((book, index) => (
+              <BookCard key={`${book.id}-${index}`} book={book} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* No Results */}
+      {!loading && !error && books.length === 0 && (
         <div className="text-center py-12">
           <p className="text-gray-500 text-lg mb-4">
-            {searchQuery
-              ? 'No books found matching your search.'
-              : 'No books available yet. Upload your first book!'}
+            No books found. Try a different category or search term.
           </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {books.map((book) => (
-            <BookCard key={book.id} book={book} />
-          ))}
+          <button
+            onClick={() => fetchBooks('Fiction')}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Browse Fiction Books
+          </button>
         </div>
       )}
     </div>

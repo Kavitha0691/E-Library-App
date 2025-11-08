@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { dbToReview } from '@/lib/dbTransform';
+
+const REVIEW_COLUMNS = `
+  id,
+  book_id,
+  user_id,
+  user_name,
+  rating,
+  comment,
+  created_at,
+  updated_at
+`.replace(/\s+/g, ' ').trim();
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,9 +27,9 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase
       .from('reviews')
-      .select('*')
-      .eq('bookId', bookId)
-      .order('createdAt', { ascending: false });
+      .select(REVIEW_COLUMNS)
+      .eq('book_id', bookId)
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Database error:', error);
@@ -27,7 +39,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ reviews: data || [] });
+    // Transform database snake_case to TypeScript camelCase
+    const reviews = (data || []).map(dbToReview);
+
+    return NextResponse.json({ reviews });
   } catch (error) {
     console.error('Reviews API error:', error);
     return NextResponse.json(
@@ -42,15 +57,19 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     const review = {
-      ...body,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      book_id: body.bookId,
+      user_id: body.userId,
+      user_name: body.userName,
+      rating: body.rating,
+      comment: body.comment,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
 
     const { data, error } = await supabase
       .from('reviews')
       .insert([review])
-      .select()
+      .select(REVIEW_COLUMNS)
       .single();
 
     if (error) {
@@ -65,7 +84,7 @@ export async function POST(request: NextRequest) {
     const { data: reviews } = await supabase
       .from('reviews')
       .select('rating')
-      .eq('bookId', body.bookId);
+      .eq('book_id', body.bookId);
 
     if (reviews) {
       const totalReviews = reviews.length;
@@ -74,13 +93,16 @@ export async function POST(request: NextRequest) {
       await supabase
         .from('books')
         .update({
-          averageRating,
-          totalReviews,
+          average_rating: averageRating,
+          total_reviews: totalReviews,
         })
         .eq('id', body.bookId);
     }
 
-    return NextResponse.json({ review: data });
+    // Transform database snake_case to TypeScript camelCase
+    const reviewData = dbToReview(data);
+
+    return NextResponse.json({ review: reviewData });
   } catch (error) {
     console.error('Reviews API error:', error);
     return NextResponse.json(
