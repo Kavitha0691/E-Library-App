@@ -53,8 +53,12 @@ export default function BookDetailPage() {
 
       // For user-uploaded books from database
       if (!bookId.startsWith('/works/')) {
+        console.log('📖 Fetching user-uploaded book from DB:', bookId);
         const response = await fetch(`/api/books/${bookId}`);
         const data = await response.json();
+
+        console.log('📦 Book API response:', data);
+        console.log('📄 Book fileUrl:', data.book?.fileUrl);
 
         if (response.ok) {
           setBook(data.book);
@@ -98,20 +102,31 @@ export default function BookDetailPage() {
   };
 
   const handleDownload = async () => {
-    if (!book?.fileUrl) return;
+    console.log('⬇️ Download clicked');
+    console.log('📚 Book:', book);
+    console.log('📄 File URL:', book?.fileUrl);
+
+    if (!book?.fileUrl) {
+      console.error('❌ No fileUrl found!');
+      alert('File URL not found. Cannot download.');
+      return;
+    }
 
     try {
       // Record download count
       if (book.source === 'user') {
+        console.log('📊 Recording download...');
         await fetch(`/api/books/${bookId}/download`, {
           method: 'POST',
         });
       }
 
       // Trigger download
+      console.log('🚀 Opening file:', book.fileUrl);
       window.open(book.fileUrl, '_blank');
     } catch (error) {
-      console.error('Error downloading book:', error);
+      console.error('❌ Error downloading book:', error);
+      alert(`Download failed: ${error}`);
     }
   };
 
