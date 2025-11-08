@@ -12,7 +12,6 @@ const nextConfig: NextConfig = {
         hostname: 'lgjzetyzbxuxzjcmrrij.supabase.co',
       },
     ],
-    domains: ['covers.openlibrary.org', 'lgjzetyzbxuxzjcmrrij.supabase.co'],
   },
 };
 

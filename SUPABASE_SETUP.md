@@ -2,6 +2,65 @@
 
 Follow these steps to enable reviews and uploads in your E-Library app.
 
+---
+
+## 🔧 IMPORTANT: If You Already Created Tables
+
+If you're seeing an error like `invalid input syntax for type uuid: "/works/OL138052W"`, you need to **recreate the reviews table** with the correct type.
+
+**Run this SQL first** to fix the issue:
+
+```sql
+-- Drop and recreate reviews table with correct book_id type
+DROP TABLE IF EXISTS reviews CASCADE;
+
+CREATE TABLE reviews (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  book_id TEXT NOT NULL,  -- TEXT to support both UUID and Open Library IDs
+  user_id TEXT NOT NULL,
+  user_name TEXT NOT NULL,
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  comment TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Re-create index
+CREATE INDEX idx_reviews_book_id ON reviews(book_id);
+CREATE INDEX idx_reviews_created_at ON reviews(created_at DESC);
+
+-- Re-create RLS policies
+ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow public read access to reviews"
+  ON reviews FOR SELECT
+  TO public
+  USING (true);
+
+CREATE POLICY "Allow public insert access to reviews"
+  ON reviews FOR INSERT
+  TO public
+  WITH CHECK (true);
+
+CREATE POLICY "Allow public update access to reviews"
+  ON reviews FOR UPDATE
+  TO public
+  USING (true);
+
+CREATE POLICY "Allow public delete access to reviews"
+  ON reviews FOR DELETE
+  TO public
+  USING (true);
+
+-- Re-create trigger
+CREATE TRIGGER update_reviews_updated_at BEFORE UPDATE ON reviews
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+```
+
+After running this, **try submitting a review again** - it should work!
+
+---
+
 ## Step 1: Create Database Tables
 
 1. **Open Supabase Dashboard**
@@ -57,7 +116,7 @@ CREATE TABLE books (
 -- ============================================
 CREATE TABLE reviews (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  book_id TEXT NOT NULL,
+  book_id TEXT NOT NULL,  -- TEXT to support both UUID and Open Library IDs
   user_id TEXT NOT NULL,
   user_name TEXT NOT NULL,
   rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
