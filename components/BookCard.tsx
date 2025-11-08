@@ -11,8 +11,13 @@ interface BookCardProps {
 }
 
 export default function BookCard({ book }: BookCardProps) {
+  const handleClick = () => {
+    // Store book data in sessionStorage so the detail page can access it
+    sessionStorage.setItem('currentBook', JSON.stringify(book));
+  };
+
   return (
-    <Link href={`/book/${encodeURIComponent(book.id)}`}>
+    <Link href={`/book/${encodeURIComponent(book.id)}`} onClick={handleClick}>
       <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 h-full flex flex-col">
         <div className="relative h-64 bg-gray-200">
           {book.coverImage ? (
