@@ -64,19 +64,20 @@ export default function UploadPage() {
       // Step 2: Create book record in database
       const fileType = bookFile.name.split('.').pop()?.toLowerCase() as 'pdf' | 'epub' | 'mobi';
 
+      // Use snake_case for database columns
       const bookData = {
         title: formData.title,
         author: formData.author,
         description: formData.description || undefined,
         category: formData.category,
         isbn: formData.isbn || undefined,
-        publishYear: formData.publishYear ? parseInt(formData.publishYear) : undefined,
+        publish_year: formData.publishYear ? parseInt(formData.publishYear) : undefined,
         publisher: formData.publisher || undefined,
-        fileUrl: uploadData.fileUrl,
-        fileName: uploadData.fileName,
-        fileSize: uploadData.fileSize,
-        fileType,
-        coverImage: uploadData.coverUrl,
+        file_url: uploadData.fileUrl,
+        file_name: uploadData.fileName,
+        file_size: uploadData.fileSize,
+        file_type: fileType,
+        cover_image: uploadData.coverUrl,
       };
 
       const createResponse = await fetch('/api/books', {
