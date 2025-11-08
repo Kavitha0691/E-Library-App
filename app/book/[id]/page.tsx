@@ -13,7 +13,6 @@ import {
   Calendar,
   User,
   Loader2,
-  ExternalLink
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
@@ -40,9 +39,21 @@ export default function BookDetailPage() {
     try {
       setLoading(true);
 
-      // For user-uploaded books
+      // Try to get book data from sessionStorage first (for Open Library books)
+      const storedBook = sessionStorage.getItem('currentBook');
+      if (storedBook) {
+        const parsedBook = JSON.parse(storedBook);
+        if (parsedBook.id === bookId) {
+          console.log('📖 Loaded book from storage:', parsedBook.title);
+          setBook(parsedBook);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // For user-uploaded books from database
       if (!bookId.startsWith('/works/')) {
-        const response = await fetch(`/api/books/${bookId}`);
+        const response = await fetch(\`/api/books/\${bookId}\`);
         const data = await response.json();
 
         if (response.ok) {
@@ -50,13 +61,13 @@ export default function BookDetailPage() {
           fetchReviews(bookId);
         }
       } else {
-        // For Open Library books, create a temporary book object
-        // In a real app, you might want to save these to your database when viewed
+        // Fallback for Open Library books without stored data
+        console.warn('⚠️ Book data not found in storage');
         setBook({
           id: bookId,
-          title: 'Loading...',
+          title: 'Book from Open Library',
           author: 'Unknown',
-          description: 'Book from Open Library',
+          description: 'Click "Read on Open Library" to view this book.',
           category: 'Other',
           uploadedAt: new Date().toISOString(),
           viewCount: 0,
@@ -75,7 +86,7 @@ export default function BookDetailPage() {
 
   const fetchReviews = async (id: string) => {
     try {
-      const response = await fetch(`/api/reviews?bookId=${id}`);
+      const response = await fetch(\`/api/reviews?bookId=\${id}\`);
       const data = await response.json();
 
       if (response.ok) {
@@ -92,7 +103,7 @@ export default function BookDetailPage() {
     try {
       // Record download count
       if (book.source === 'user') {
-        await fetch(`/api/books/${bookId}/download`, {
+        await fetch(\`/api/books/\${bookId}/download\`, {
           method: 'POST',
         });
       }
@@ -168,6 +179,7 @@ export default function BookDetailPage() {
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 33vw"
+                priority
               />
             ) : (
               <div className="flex items-center justify-center h-full bg-gradient-to-br from-blue-100 to-blue-200">
@@ -247,7 +259,7 @@ export default function BookDetailPage() {
               </div>
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Buttons - ONLY "Read on Open Library" for Open Library books */}
             <div className="space-y-3">
               {book.source === 'user' && book.fileUrl && (
                 <div className="flex space-x-4">
@@ -272,37 +284,15 @@ export default function BookDetailPage() {
               )}
 
               {book.source === 'openlibrary' && (
-                <>
-                  <a
-                    href={`https://openlibrary.org${book.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex w-full items-center justify-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                  >
-                    <BookOpen className="h-5 w-5" />
-                    <span>Read on Open Library</span>
-                  </a>
-
-                  <a
-                    href={`https://archive.org/search?query=${encodeURIComponent(book.title + ' ' + book.author)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex w-full items-center justify-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-                  >
-                    <Download className="h-5 w-5" />
-                    <span>Search on Internet Archive</span>
-                  </a>
-
-                  <a
-                    href={`https://www.google.com/search?q=${encodeURIComponent(book.title + ' ' + book.author + ' pdf')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex w-full items-center justify-center space-x-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
-                  >
-                    <ExternalLink className="h-5 w-5" />
-                    <span>Find PDF Online</span>
-                  </a>
-                </>
+                <a
+                  href={\`https://openlibrary.org\${book.id}\`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex w-full items-center justify-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-lg font-medium"
+                >
+                  <BookOpen className="h-6 w-6" />
+                  <span>Read on Open Library</span>
+                </a>
               )}
             </div>
           </div>
