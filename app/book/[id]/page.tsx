@@ -24,6 +24,7 @@ export default function BookDetailPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [reviewLoading, setReviewLoading] = useState(false);
+  const [coverImageError, setCoverImageError] = useState(false);
   const [newReview, setNewReview] = useState({
     rating: 5,
     comment: '',
@@ -113,6 +114,27 @@ export default function BookDetailPage() {
     }
 
     try {
+      // Verify file is accessible before attempting download
+      console.log('🔍 Checking if file is accessible...');
+      const checkResponse = await fetch(book.fileUrl, { method: 'HEAD' });
+
+      if (!checkResponse.ok) {
+        console.error('❌ File not accessible. Status:', checkResponse.status);
+
+        if (checkResponse.status === 400 || checkResponse.status === 403 || checkResponse.status === 404) {
+          alert(
+            'File not accessible. This usually means:\n\n' +
+            '1. Storage bucket is not set to "Public"\n' +
+            '2. Storage policies are not configured\n' +
+            '3. File was deleted\n\n' +
+            'Please check STORAGE_TROUBLESHOOTING.md for help.'
+          );
+          return;
+        }
+      }
+
+      console.log('✅ File is accessible');
+
       // Record download count
       if (book.source === 'user') {
         console.log('📊 Recording download...');
@@ -126,7 +148,11 @@ export default function BookDetailPage() {
       window.open(book.fileUrl, '_blank');
     } catch (error) {
       console.error('❌ Error downloading book:', error);
-      alert(`Download failed: ${error}`);
+      alert(
+        `Download failed: ${error}\n\n` +
+        'This may be a storage configuration issue. ' +
+        'Check STORAGE_TROUBLESHOOTING.md for help.'
+      );
     }
   };
 
@@ -187,7 +213,7 @@ export default function BookDetailPage() {
         <div className="md:flex">
           {/* Book Cover */}
           <div className="md:w-1/3 bg-gray-200 relative h-96 md:h-auto">
-            {book.coverImage ? (
+            {book.coverImage && !coverImageError ? (
               <Image
                 src={book.coverImage}
                 alt={book.title}
@@ -195,10 +221,19 @@ export default function BookDetailPage() {
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 33vw"
                 priority
+                onError={() => {
+                  console.error('❌ Cover image failed to load:', book.coverImage);
+                  setCoverImageError(true);
+                }}
               />
             ) : (
-              <div className="flex items-center justify-center h-full bg-gradient-to-br from-blue-100 to-blue-200">
-                <BookOpen className="h-32 w-32 text-blue-400" />
+              <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-blue-100 to-blue-200 p-4">
+                <BookOpen className="h-32 w-32 text-blue-400 mb-4" />
+                {coverImageError && (
+                  <p className="text-xs text-gray-600 text-center">
+                    Cover image not available
+                  </p>
+                )}
               </div>
             )}
           </div>

@@ -3,12 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-  "dev": "next dev",
-  "build": "next build",
-  "start": "next start",
-  "lint": "eslint"
-}
-,
+
   "dependencies": {
     "@supabase/supabase-js": "^2.80.0",
     "clsx": "^2.1.1",

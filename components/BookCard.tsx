@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Book } from '@/types';
@@ -11,6 +12,8 @@ interface BookCardProps {
 }
 
 export default function BookCard({ book }: BookCardProps) {
+  const [imageError, setImageError] = useState(false);
+
   const handleClick = () => {
     // Store book data in sessionStorage so the detail page can access it
     sessionStorage.setItem('currentBook', JSON.stringify(book));
@@ -20,13 +23,17 @@ export default function BookCard({ book }: BookCardProps) {
     <Link href={`/book/${encodeURIComponent(book.id)}`} onClick={handleClick}>
       <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 h-full flex flex-col">
         <div className="relative h-64 bg-gray-200">
-          {book.coverImage ? (
+          {book.coverImage && !imageError ? (
             <Image
               src={book.coverImage}
               alt={book.title}
               fill
               className="object-cover"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              onError={() => {
+                console.error('Cover image failed to load for book:', book.title);
+                setImageError(true);
+              }}
             />
           ) : (
             <div className="flex items-center justify-center h-full bg-gradient-to-br from-blue-100 to-blue-200">
