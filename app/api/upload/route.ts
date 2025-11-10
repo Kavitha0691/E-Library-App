@@ -1,9 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, STORAGE_BUCKET, COVERS_BUCKET } from '@/lib/supabase';
+import { verifyStorageSetup, verifyFileAccess } from '@/lib/storageHelpers';
 
 export async function POST(request: NextRequest) {
   try {
     console.log('📤 Upload API called');
+
+    // Verify storage setup first
+    console.log('🔍 Verifying storage configuration...');
+    const storageCheck = await verifyStorageSetup();
+
+    if (!storageCheck.isReady) {
+      console.error('❌ Storage not configured:', storageCheck.message);
+      return NextResponse.json(
+        {
+          error: 'Storage not configured',
+          details: storageCheck.message,
+          setupGuide: 'Please check STORAGE_TROUBLESHOOTING.md for setup instructions',
+        },
+        { status: 503 } // Service Unavailable
+      );
+    }
+
+    console.log('✅ Storage configuration verified');
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const coverImage = formData.get('coverImage') as File | null;
@@ -47,6 +67,18 @@ export async function POST(request: NextRequest) {
 
     console.log('🔗 File URL:', fileUrl);
 
+    // Verify file is accessible
+    console.log('🔍 Verifying file accessibility...');
+    const isAccessible = await verifyFileAccess(fileUrl);
+
+    if (!isAccessible) {
+      console.warn('⚠️ File uploaded but not publicly accessible!');
+      console.warn('This usually means the bucket is not public or policies are missing.');
+      console.warn('File may not be downloadable. Check STORAGE_TROUBLESHOOTING.md');
+    } else {
+      console.log('✅ File is publicly accessible');
+    }
+
     let coverUrl: string | undefined;
 
     // Upload cover image if provided
@@ -68,6 +100,17 @@ export async function POST(request: NextRequest) {
           .getPublicUrl(coverFileName);
         coverUrl = publicUrl;
         console.log('✅ Cover uploaded:', coverUrl);
+
+        // Verify cover is accessible
+        console.log('🔍 Verifying cover accessibility...');
+        const isCoverAccessible = await verifyFileAccess(coverUrl);
+
+        if (!isCoverAccessible) {
+          console.warn('⚠️ Cover uploaded but not publicly accessible!');
+          console.warn('Cover image may not display. Check STORAGE_TROUBLESHOOTING.md');
+        } else {
+          console.log('✅ Cover is publicly accessible');
+        }
       } else {
         console.error('⚠️ Cover upload failed:', coverError);
       }
@@ -78,6 +121,9 @@ export async function POST(request: NextRequest) {
       fileName,
       coverUrl,
       fileSize: file.size,
+      warnings: !isAccessible
+        ? ['Files uploaded but may not be publicly accessible. Please check your storage bucket settings in Supabase Dashboard. See STORAGE_TROUBLESHOOTING.md for help.']
+        : undefined,
     };
 
     console.log('✅ Upload complete, returning:', response);

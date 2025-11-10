@@ -10,6 +10,8 @@ export default function UploadPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string>('');
+  const [warnings, setWarnings] = useState<string[]>([]);
   const [bookFile, setBookFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
 
@@ -34,9 +36,11 @@ export default function UploadPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    setWarnings([]);
 
     if (!bookFile) {
-      alert('Please select a book file to upload');
+      setError('Please select a book file to upload');
       return;
     }
 
@@ -55,11 +59,23 @@ export default function UploadPage() {
         body: uploadFormData,
       });
 
+      const uploadData = await uploadResponse.json();
+
       if (!uploadResponse.ok) {
-        throw new Error('Failed to upload files');
+        // Check if it's a storage configuration error
+        if (uploadResponse.status === 503) {
+          setError(
+            `Storage Configuration Required:\n\n${uploadData.details}\n\nPlease follow the instructions in STORAGE_TROUBLESHOOTING.md to set up your storage buckets.`
+          );
+          return;
+        }
+        throw new Error(uploadData.error || 'Failed to upload files');
       }
 
-      const uploadData = await uploadResponse.json();
+      // Check for warnings about file accessibility
+      if (uploadData.warnings && uploadData.warnings.length > 0) {
+        setWarnings(uploadData.warnings);
+      }
 
       // Step 2: Create book record in database
       const fileType = bookFile.name.split('.').pop()?.toLowerCase() as 'pdf' | 'epub' | 'mobi';
@@ -98,9 +114,9 @@ export default function UploadPage() {
       setTimeout(() => {
         router.push(`/book/${book.id}`);
       }, 2000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading book:', error);
-      alert('Failed to upload book. Please try again.');
+      setError(`Failed to upload book: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -127,6 +143,24 @@ export default function UploadPage() {
           <Upload className="h-8 w-8 text-blue-600" />
           <h1 className="text-3xl font-bold text-gray-900">Upload a Book</h1>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <p className="font-semibold mb-1">Error:</p>
+            <p className="whitespace-pre-line">{error}</p>
+          </div>
+        )}
+
+        {/* Warning Messages */}
+        {warnings.length > 0 && (
+          <div className="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg">
+            <p className="font-semibold mb-1">Warning:</p>
+            {warnings.map((warning, index) => (
+              <p key={index} className="text-sm">{warning}</p>
+            ))}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           {/* Book File Upload */}
