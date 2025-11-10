@@ -62,13 +62,6 @@ export default function UploadPage() {
       const uploadData = await uploadResponse.json();
 
       if (!uploadResponse.ok) {
-        // Check if it's a storage configuration error
-        if (uploadResponse.status === 503) {
-          setError(
-            `Storage Configuration Required:\n\n${uploadData.details}\n\nPlease follow the instructions in STORAGE_TROUBLESHOOTING.md to set up your storage buckets.`
-          );
-          return;
-        }
         throw new Error(uploadData.error || 'Failed to upload files');
       }
 
