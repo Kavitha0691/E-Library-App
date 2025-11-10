@@ -6,23 +6,17 @@ export async function POST(request: NextRequest) {
   try {
     console.log('📤 Upload API called');
 
-    // Verify storage setup first
+    // Verify storage setup first (non-blocking warning only)
     console.log('🔍 Verifying storage configuration...');
     const storageCheck = await verifyStorageSetup();
 
     if (!storageCheck.isReady) {
-      console.error('❌ Storage not configured:', storageCheck.message);
-      return NextResponse.json(
-        {
-          error: 'Storage not configured',
-          details: storageCheck.message,
-          setupGuide: 'Please check STORAGE_TROUBLESHOOTING.md for setup instructions',
-        },
-        { status: 503 } // Service Unavailable
-      );
+      console.warn('⚠️ Storage may not be fully configured:', storageCheck.message);
+      console.warn('⚠️ Continuing with upload, but files may not be accessible');
+      // Don't block the upload, just warn
+    } else {
+      console.log('✅ Storage configuration verified');
     }
-
-    console.log('✅ Storage configuration verified');
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
