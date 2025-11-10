@@ -6,7 +6,23 @@ You're getting a 400 error because the storage buckets aren't properly set up.
 
 ---
 
-## 📋 **Step-by-Step Fix**
+## ⚡ **EASIEST FIX: Run the SQL Script**
+
+**This is the fastest way to set everything up:**
+
+1. Go to your **Supabase Dashboard** → **SQL Editor**
+2. Click **"New Query"**
+3. Open the file `STORAGE_SETUP.sql` in this repository
+4. **Copy ALL the SQL** from that file
+5. **Paste** into the SQL Editor
+6. Click **"Run"**
+7. ✅ Done! Both buckets and all policies are created automatically
+
+**Then skip to Step 6 below to test!**
+
+---
+
+## 📋 **Manual Step-by-Step Fix** (if SQL doesn't work)
 
 ### **Step 1: Verify Supabase Credentials**
 
