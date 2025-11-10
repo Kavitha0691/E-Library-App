@@ -14,39 +14,55 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Fiction');
 
-  // Fetch Open Library books by category
+  // Fetch both Open Library books AND user-uploaded books
   const fetchBooks = async (category: string) => {
     try {
       setLoading(true);
       setError('');
 
-      const url = `/api/search?category=${encodeURIComponent(category)}&limit=24`;
-      console.log('🔍 Fetching from:', url);
+      console.log('🔍 Fetching books for category:', category);
 
-      const response = await fetch(url);
-      const data = await response.json();
+      // Fetch Open Library books
+      const openLibraryUrl = `/api/search?category=${encodeURIComponent(category)}&limit=24`;
+      const openLibraryResponse = await fetch(openLibraryUrl);
+      const openLibraryData = await openLibraryResponse.json();
 
-      console.log('📦 Response:', data);
+      // Fetch user-uploaded books from database
+      const dbUrl = category === 'all'
+        ? '/api/books'
+        : `/api/books?category=${encodeURIComponent(category)}`;
+      const dbResponse = await fetch(dbUrl);
+      const dbData = await dbResponse.json();
 
-      if (response.ok && data.books && data.books.length > 0) {
-        console.log('✅ Successfully loaded', data.books.length, 'books');
-        setBooks(data.books);
+      console.log('📚 Open Library books:', openLibraryData.books?.length || 0);
+      console.log('💾 Database books:', dbData.books?.length || 0);
+
+      // Combine both sources
+      const openLibraryBooks = openLibraryData.books || [];
+      const databaseBooks = dbData.books || [];
+
+      // Put user-uploaded books first, then Open Library books
+      const allBooks = [...databaseBooks, ...openLibraryBooks];
+
+      console.log('✅ Total books:', allBooks.length);
+
+      if (allBooks.length > 0) {
+        setBooks(allBooks);
         setError('');
       } else {
-        console.error('❌ Failed to load books:', data);
-        setError('Unable to load books from Open Library. Please check your internet connection and try again.');
+        setError('No books found in this category.');
         setBooks([]);
       }
     } catch (error: any) {
       console.error('❌ Error:', error);
-      setError(`Error loading books: ${error.message}. Please check your internet connection.`);
+      setError(`Error loading books: ${error.message}`);
       setBooks([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Search Open Library
+  // Search both Open Library and database
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
 
@@ -60,17 +76,29 @@ export default function Home() {
       setLoading(true);
       setError('');
 
-      const url = `/api/search?q=${encodeURIComponent(query)}`;
-      console.log('🔍 Searching:', url);
+      console.log('🔍 Searching for:', query);
 
-      const response = await fetch(url);
-      const data = await response.json();
+      // Search Open Library
+      const openLibraryUrl = `/api/search?q=${encodeURIComponent(query)}`;
+      const openLibraryResponse = await fetch(openLibraryUrl);
+      const openLibraryData = await openLibraryResponse.json();
 
-      console.log('📦 Search results:', data);
+      // Search database
+      const dbUrl = `/api/books?search=${encodeURIComponent(query)}`;
+      const dbResponse = await fetch(dbUrl);
+      const dbData = await dbResponse.json();
 
-      if (response.ok && data.books && data.books.length > 0) {
-        console.log('✅ Found', data.books.length, 'books');
-        setBooks(data.books);
+      console.log('📚 Open Library results:', openLibraryData.books?.length || 0);
+      console.log('💾 Database results:', dbData.books?.length || 0);
+
+      // Combine results
+      const openLibraryBooks = openLibraryData.books || [];
+      const databaseBooks = dbData.books || [];
+      const allBooks = [...databaseBooks, ...openLibraryBooks];
+
+      if (allBooks.length > 0) {
+        console.log('✅ Found', allBooks.length, 'total books');
+        setBooks(allBooks);
         setError('');
       } else {
         setError(`No books found for "${query}". Try a different search term.`);
