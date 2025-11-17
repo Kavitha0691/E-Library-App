@@ -5,17 +5,23 @@ import { verifyStorageSetup, verifyFileAccess } from '@/lib/storageHelpers';
 export async function POST(request: NextRequest) {
   try {
     console.log('📤 Upload API called');
+    console.log('🔧 Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log('🔧 Supabase Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
     // Verify storage setup first (non-blocking warning only)
     console.log('🔍 Verifying storage configuration...');
-    const storageCheck = await verifyStorageSetup();
+    try {
+      const storageCheck = await verifyStorageSetup();
 
-    if (!storageCheck.isReady) {
-      console.warn('⚠️ Storage may not be fully configured:', storageCheck.message);
-      console.warn('⚠️ Continuing with upload, but files may not be accessible');
-      // Don't block the upload, just warn
-    } else {
-      console.log('✅ Storage configuration verified');
+      if (!storageCheck.isReady) {
+        console.warn('⚠️ Storage may not be fully configured:', storageCheck.message);
+        console.warn('⚠️ Continuing with upload, but files may not be accessible');
+      } else {
+        console.log('✅ Storage configuration verified');
+      }
+    } catch (verifyError: any) {
+      console.error('⚠️ Storage verification failed:', verifyError.message);
+      console.log('⚠️ Continuing with upload anyway...');
     }
 
     const formData = await request.formData();
@@ -61,16 +67,20 @@ export async function POST(request: NextRequest) {
 
     console.log('🔗 File URL:', fileUrl);
 
-    // Verify file is accessible
-    console.log('🔍 Verifying file accessibility...');
-    const isAccessible = await verifyFileAccess(fileUrl);
+    // Verify file is accessible (non-blocking)
+    let isAccessible = false;
+    try {
+      console.log('🔍 Verifying file accessibility...');
+      isAccessible = await verifyFileAccess(fileUrl);
 
-    if (!isAccessible) {
-      console.warn('⚠️ File uploaded but not publicly accessible!');
-      console.warn('This usually means the bucket is not public or policies are missing.');
-      console.warn('File may not be downloadable. Check STORAGE_TROUBLESHOOTING.md');
-    } else {
-      console.log('✅ File is publicly accessible');
+      if (!isAccessible) {
+        console.warn('⚠️ File uploaded but not publicly accessible!');
+        console.warn('This usually means the bucket is not public or policies are missing.');
+      } else {
+        console.log('✅ File is publicly accessible');
+      }
+    } catch (accessError: any) {
+      console.warn('⚠️ Could not verify file accessibility:', accessError.message);
     }
 
     let coverUrl: string | undefined;
@@ -95,15 +105,18 @@ export async function POST(request: NextRequest) {
         coverUrl = publicUrl;
         console.log('✅ Cover uploaded:', coverUrl);
 
-        // Verify cover is accessible
-        console.log('🔍 Verifying cover accessibility...');
-        const isCoverAccessible = await verifyFileAccess(coverUrl);
+        // Verify cover is accessible (non-blocking)
+        try {
+          console.log('🔍 Verifying cover accessibility...');
+          const isCoverAccessible = await verifyFileAccess(coverUrl);
 
-        if (!isCoverAccessible) {
-          console.warn('⚠️ Cover uploaded but not publicly accessible!');
-          console.warn('Cover image may not display. Check STORAGE_TROUBLESHOOTING.md');
-        } else {
-          console.log('✅ Cover is publicly accessible');
+          if (!isCoverAccessible) {
+            console.warn('⚠️ Cover uploaded but not publicly accessible!');
+          } else {
+            console.log('✅ Cover is publicly accessible');
+          }
+        } catch (coverAccessError: any) {
+          console.warn('⚠️ Could not verify cover accessibility:', coverAccessError.message);
         }
       } else {
         console.error('⚠️ Cover upload failed:', coverError);
